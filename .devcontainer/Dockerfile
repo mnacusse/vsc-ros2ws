@@ -1,3 +1,4 @@
+
 # FROM althack/ros2:humble-gazebo
 
 #######################
@@ -48,7 +49,11 @@ RUN sudo add-apt-repository universe \
   && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null \
   && apt-get update && apt-get install -y --no-install-recommends \
     #ros-humble-ros-base \  
-    ros-humble-desktop \
+    ros-humble-desktop-full \
+    #ROS2 CONTROL
+    ros-humble-ros2-control \
+    ros-humble-ros2-controllers \
+    #Python3
     python3-argcomplete \
   && rm -rf /var/lib/apt/lists/*
 
@@ -118,19 +123,48 @@ ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 #  && rm -rf /var/lib/apt/lists/*
 #ENV DEBIAN_FRONTEND=
 
+
+###########################################
+#  Full + Ignition Gazebo image + ros2_control + nav2
+###########################################
+FROM dev AS gazebo
+
+ENV DEBIAN_FRONTEND=noninteractive
+# Install gazebo and nav2
+RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null \
+  && apt-get update && apt-get install -q -y --no-install-recommends \
+    ros-humble-gazebo* \
+    ros-humble-joint-state-publisher \
+    ros-humble-ros-ign \
+    ros-humble-gazebo-ros-pkgs \
+    ros-humble-ign-ros2-control \
+   # libignition-sensors7-rgbd-cameras \
+    ros-humble-navigation2 \
+    ros-humble-nav2-bringup \
+  && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=
+
+###########################################
+
 ###########################################
 #  Full+Gazebo image 
 ###########################################
 #FROM full AS gazebo
 
-ENV DEBIAN_FRONTEND=noninteractive
-# Install gazebo
-RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
-  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null \
-  && apt-get update && apt-get install -q -y --no-install-recommends \
-    ros-humble-gazebo* \
-  && rm -rf /var/lib/apt/lists/*
-ENV DEBIAN_FRONTEND=
+# ENV DEBIAN_FRONTEND=noninteractive
+# # Install gazebo
+# RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
+#   && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null \
+#   && apt-get update && apt-get install -q -y --no-install-recommends \
+#   ignition-fortress \
+#   #ros-humble-ros-gz \
+#   #&& ros-humble-gazebo-ros-pkgs \
+#   #ros-humble-ros2-control \
+#   #ros-humble-ros2-controllers \
+#   #ros-humble-gazebo* \
+#   && rm -rf /var/lib/apt/lists/*
+# ENV DEBIAN_FRONTEND=
 
 ###########################################
 #  Full+Gazebo+Nvidia image 
@@ -174,3 +208,5 @@ ENV DEBIAN_FRONTEND=
 # Set up auto-source of workspace for ros user
 ARG WORKSPACE=vscode_ros2_ws
 RUN echo "if [ -f ${WORKSPACE}/install/setup.bash ]; then source ${WORKSPACE}/install/setup.bash; fi" >> /home/ros/.bashrc
+
+
